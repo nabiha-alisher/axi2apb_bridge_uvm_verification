@@ -1,7 +1,5 @@
 # axi2apb_bridge_uvm_verification
-uvm environment to verify the axi2apb brdige
-=======
-# UVM environment for `axi2apb_wrap`
+
 
 Two agents, one scoreboard, functional coverage, SVA checkers, 16 tests, two data-width builds.
 
