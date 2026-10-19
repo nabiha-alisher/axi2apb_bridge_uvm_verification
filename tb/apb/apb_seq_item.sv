@@ -1,33 +1,28 @@
-// =============================================================================
-// 1. apb_seq_item : "how to answer ONE APB access"
+//-------------------------------------------------------------------------
+// apb_seq_item
 //
-// The DUT is the APB master, so this agent is a SLAVE. A sequence item therefore
-// describes the slave's *response profile* for one access (random, chosen by the
-// sequence), and carries back what the driver saw on the bus (filled by the driver).
-//
-//   sequence --(waits, slverr, rdata override)--> driver --(addr, write, wdata, rdata)--> sequence
-//
-// (apb_item, in apb_item.sv, is the separate monitor-side record of a completed access.)
-// =============================================================================
+// One item = one APB transfer, seen from the SLAVE side.
+//  - "response" fields (rand) tell the slave driver HOW to answer:
+//        wait_cycles, pslverr, prdata / override_prdata
+//  - "request" fields are filled in by the slave driver / monitor with
+//    what the bridge actually did on the bus (paddr, pwrite, pwdata).
+//-------------------------------------------------------------------------
 class apb_seq_item extends uvm_sequence_item;
 
-  // ---------------------------------------------------------------- response profile (random)
-  rand int unsigned        waits;               // wait states before PREADY
-  rand bit                 slverr;              // answer with PSLVERR
-  rand bit                 rdata_override_en;   // 1: return rdata_override instead of memory content
-  rand bit [APB_DW-1:0]    rdata_override;
+  // ---- request side (observed on the bus, NOT randomized) ----
+  bit [31:0] paddr;
+  bit [31:0] pwdata;
+  bit        pwrite;
 
-  // ---------------------------------------------------------------- constraint knobs (not random)
-  int unsigned             min_wait = 0;
-  int unsigned             max_wait = 0;
-  int unsigned             err_pct  = 0;        // 0..100
+  // ---- response side (controls the slave) ----
+  rand int unsigned wait_cycles;     // wait states = access cycles (PENABLE=1) with PREADY=0
+                                     // 0 = PREADY already high in the FIRST PENABLE cycle
+  rand bit          pslverr;         // value driven on PSLVERR with PREADY
+  rand bit [31:0]   prdata;          // used only when override_prdata == 1
+  rand bit          override_prdata; // 0: read data comes from slave memory model
 
-  // ---------------------------------------------------------------- observed access (driver fills)
-  bit [APB_AW-1:0]         addr;
-  bit                      write;
-  bit [APB_DW-1:0]         wdata;
-  bit [APB_DW-1:0]         rdata;               // data actually returned on a read
-  bit                      aborted;             // access disappeared (reset) before completion
+  // ---- filled by the monitor ----
+  int unsigned      observed_waits;
 
   `uvm_object_utils(apb_seq_item)
 
@@ -35,14 +30,15 @@ class apb_seq_item extends uvm_sequence_item;
     super.new(name);
   endfunction
 
-  constraint c_waits    { waits inside {[min_wait : (max_wait < min_wait ? min_wait : max_wait)]}; }
-  constraint c_err      { slverr dist {1'b1 := err_pct, 1'b0 := (100 - err_pct)}; }
-  constraint c_override { soft rdata_override_en == 1'b0; }
+  // soft: sequences / cfg can narrow or override these freely
+  constraint c_wait { soft wait_cycles inside {[0:8]}; }
+  constraint c_err  { soft pslverr == 1'b0; }
+  constraint c_ovr  { soft override_prdata == 1'b0; }
 
-  function string convert2string();
-    return $sformatf("rsp{waits=%0d err=%0b ovr=%0b} access{%s addr=0x%08h wdata=0x%08h rdata=0x%08h%s}",
-                     waits, slverr, rdata_override_en, write ? "WR" : "RD", addr, wdata, rdata,
-                     aborted ? " ABORTED" : "");
+  virtual function string convert2string();
+    return $sformatf("%s addr=0x%08h wdata=0x%08h rdata=0x%08h pslverr=%0b waits=%0d (cfg wait=%0d)",
+                     pwrite ? "WRITE" : "READ ", paddr, pwdata, prdata,
+                     pslverr, observed_waits, wait_cycles);
   endfunction
 
-endclass
+endclass : apb_seq_item

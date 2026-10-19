@@ -1,4 +1,3 @@
-
 module axi_w_buffer #(
     parameter int DATA_WIDTH   = -1,
     parameter int USER_WIDTH   = -1,

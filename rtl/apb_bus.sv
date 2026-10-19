@@ -25,12 +25,14 @@ interface APB_BUS #(
 
     // Slave: receives the request, drives the response
     modport Slave (
+	input clk,rst_n,
         input  paddr, pwdata, pwrite, psel, penable,
         output prdata, pready, pslverr
     );
 
     // Passive monitor
     modport Monitor (
+	input clk,rst_n,
         input paddr, pwdata, pwrite, psel, penable, prdata, pready, pslverr
     );
 

@@ -1,4 +1,3 @@
-
 module axi2apb_wrap #(
     parameter int unsigned AXI_ADDR_WIDTH   = 32,
     parameter int unsigned AXI_DATA_WIDTH   = 32,

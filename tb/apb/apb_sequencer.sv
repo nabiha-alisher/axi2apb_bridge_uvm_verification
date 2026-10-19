@@ -1,6 +1,3 @@
-// =============================================================================
-// 3. apb_sequencer : routes apb_seq_item response profiles from sequences to the driver
-// =============================================================================
 class apb_sequencer extends uvm_sequencer #(apb_seq_item);
 
   `uvm_component_utils(apb_sequencer)
@@ -9,4 +6,4 @@ class apb_sequencer extends uvm_sequencer #(apb_seq_item);
     super.new(name, parent);
   endfunction
 
-endclass
+endclass : apb_sequencer

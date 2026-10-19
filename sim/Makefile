@@ -1,63 +1,35 @@
-# Usage:
-#   make SIM=vcs|questa|xrun DW=32|64 TEST=axi2apb_smoke_test [WAVES=1] [SEED=1]
-#   make regress SIM=...            (all tests, both widths)
-SIM   ?= vcs
-DW    ?= 32
-TEST  ?= axi2apb_smoke_test
-SEED  ?= 1
-WAVES ?= 0
-VERB  ?= UVM_MEDIUM
+# Makefile
+TEST 		= axi_wr_rd_test
+TIME_OUT	= 9200000
 
-PLUS  = +UVM_TESTNAME=$(TEST) +UVM_VERBOSITY=$(VERB) +ntb_random_seed=$(SEED)
-ifeq ($(WAVES),1)
-PLUS += +WAVES
-endif
-BUILD = build_$(SIM)_dw$(DW)
 
-TESTS = axi2apb_smoke_test axi2apb_single_test axi2apb_pipelined_test axi2apb_apb_wait_test \
-        axi2apb_backpressure_test axi2apb_order_test axi2apb_rw_collision_test \
-        axi2apb_readback_test axi2apb_narrow_test axi2apb_strobe_test axi2apb_burst_test \
-        axi2apb_burst_wait_test axi2apb_burst_wgap_test axi2apb_slverr_test \
-        axi2apb_reset_test axi2apb_random_test
-
-.PHONY: run compile regress clean
-
-run: compile
-ifeq ($(SIM),vcs)
-	cd $(BUILD) && ./simv $(PLUS) -l run_$(TEST).log
-endif
-ifeq ($(SIM),questa)
-	cd $(BUILD) && vsim -c -sv_seed $(SEED) work.tb_top $(PLUS) -do "run -all; quit -f" -l run_$(TEST).log
-endif
-ifeq ($(SIM),xrun)
-	cd $(BUILD) && xrun -R -svseed $(SEED) $(PLUS) -l run_$(TEST).log
-endif
-
+# to compile the code on vcs, run `make compile` command in the terminal
 compile:
-	mkdir -p $(BUILD)
-ifeq ($(SIM),vcs)
-	cd $(BUILD) && vcs -full64 -sverilog -ntb_opts uvm-1.2 -timescale=1ns/1ps \
-	    +define+AXI_DATA_WIDTH=$(DW) -f ../files.f -debug_access+r -l comp.log -o simv
-endif
-ifeq ($(SIM),questa)
-	cd $(BUILD) && vlib work && vlog -sv -timescale 1ns/1ps +define+AXI_DATA_WIDTH=$(DW) \
-	    -L $${UVM_HOME:-$$QUESTA_HOME/verilog_src/uvm-1.2} -f ../files.f -l comp.log
-endif
-ifeq ($(SIM),xrun)
-	cd $(BUILD) && xrun -compile -elaborate -uvm -sv -timescale 1ns/1ps \
-	    +define+AXI_DATA_WIDTH=$(DW) -f ../files.f -l comp.log
-endif
+	vcs -sverilog -f build.flist -ntb_opts uvm-1.2 +UVM_TESTNAME=$(TEST) -cm line+cond+tgl+assert -LDFLAGS -Wl,--no-as-needed -full64 -debug_all
+	cd ./out && rm -rf build_$(TEST)
+	cd ./out && mkdir build_$(TEST)
+	mv csrc simv.daidir simv.vdb simv vc_hdrs.h ./out/build_$(TEST)
 
-regress:
-	@for dw in 32 64; do \
-	  $(MAKE) --no-print-directory compile SIM=$(SIM) DW=$$dw || exit 1; \
-	  for t in $(TESTS); do \
-	    $(MAKE) --no-print-directory run SIM=$(SIM) DW=$$dw TEST=$$t > /dev/null 2>&1; \
-	    log=build_$(SIM)_dw$$dw/run_$$t.log; \
-	    errs=$$(grep -E "^UVM_(ERROR|FATAL) :" $$log | awk '{s+=$3} END{print s+0}'); \
-	    echo "DW=$$dw  $$t : UVM_ERROR+FATAL = $$errs"; \
-	  done; \
-	done
+# for simulation, run `make sim` command in the terminal
+sim: 
+	cd ./out/build_$(TEST) && ./simv -cm line+cond+tgl+assert +UVM_TESTNAME=$(TEST) > log_build_$(TEST).log
 
-clean:
-	rm -rf build_* *.log *.vcd
+# To view waveform, run `make gui` command in the terminal
+gui: 
+	cd ./out/build_$(TEST) && dve -vpd waveform.vpd	
+
+# More advance make targets
+cov:
+	urg -report  ./out/coverage_report -dir  ./out/build_*/*.vdb
+
+
+clean: 
+	rm -rf ./out/build_$(TEST)
+
+allclean:
+	rm -rf ./out/*
+
+
+dve_cov:
+	dve -covdir simv.vdb
+

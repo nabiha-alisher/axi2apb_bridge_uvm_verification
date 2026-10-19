@@ -1,0 +1,38 @@
+// ------------------------------------------------------------
+// include directories
+// ------------------------------------------------------------
++incdir+../rtl
++incdir+../tb/axi
++incdir+../tb/apb
++incdir+../tb/env
++incdir+../tb/tests
+
+// ------------------------------------------------------------
+// 1. interfaces (must be compiled before the UVM package)
+// ------------------------------------------------------------
+../rtl/axi_bus.sv
+../rtl/apb_bus.sv
+
+// ------------------------------------------------------------
+// 2. design files
+// ------------------------------------------------------------
+../rtl/fifo.sv
+../rtl/axi_single_slice.sv
+../rtl/axi_aw_buffer.sv
+../rtl/axi_ar_buffer.sv
+../rtl/axi_w_buffer.sv
+../rtl/axi_r_buffer.sv
+../rtl/axi_b_buffer.sv
+../rtl/axi2apb.sv
+../rtl/axi2apb_64_32.sv
+../rtl/axi2apb_wrap.sv
+
+// ------------------------------------------------------------
+// 3. UVM package (it `includes the agent, env and test files)
+// ------------------------------------------------------------
+../tb/axi2apb_tb_uvm_pkg.sv
+
+// ------------------------------------------------------------
+// 4. testbench top
+// ------------------------------------------------------------
+../tb/testbench.sv

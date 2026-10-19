@@ -88,6 +88,7 @@ interface AXI_BUS #(
 
     // Master: the module drives requests and receives responses
     modport Master (
+	input clk,rst_n,
         output aw_id, aw_addr, aw_len, aw_size, aw_burst, aw_lock, aw_cache,
                aw_prot, aw_qos, aw_region, aw_user, aw_valid,
         input  aw_ready,
