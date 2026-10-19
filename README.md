@@ -28,23 +28,7 @@ make SIM=xrun   regress                            # every test, both widths
 `axi2apb_wrap.sv` includes itself. `rtl/` holds your files unchanged except for the removed
 `` `include `` lines; `sim/files.f` lists them in compile order.
 
-## Tests
-| Test | Purpose |
-|---|---|
-| smoke | write + read back |
-| single | 100 random single transfers, one at a time |
-| pipelined | 300 random singles queued back to back |
-| apb_wait | random PREADY wait states (0-6) |
-| backpressure | BREADY / RREADY low 85 % of cycles |
-| order | AW before W, W before AW, same cycle |
-| rw_collision | read and write presented in the same cycle |
-| readback | 32 writes, then 32 reads |
-| narrow | size < bus width |
-| strobe | word-granular WSTRB (64-bit) |
-| burst / burst_wait / burst_wgap | INCR bursts: zero-wait / APB waits / gaps between W beats (64-bit only) |
-| slverr | PSLVERR injection (`apb_error_slave_seq`), expects SLVERR on B/R |
-| reset | reset hits in the middle of queued traffic, three times |
-| random | everything mixed |
+
 
 Burst tests print a skip message on the 32-bit build (that bridge ignores AxLEN).
 
